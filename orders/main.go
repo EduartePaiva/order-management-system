@@ -24,7 +24,7 @@ func main() {
 
 	store := NewStore()
 	svc := NewService(store)
-	NewGRPCHandler(grpcServer)
+	NewGRPCHandler(grpcServer, svc)
 
 	svc.CreateOrder(context.Background())
 

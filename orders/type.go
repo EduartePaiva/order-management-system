@@ -1,9 +1,14 @@
 package main
 
-import "context"
+import (
+	"context"
+
+	pb "github.com/eduartepaiva/order-management-system/common/api"
+)
 
 type OrdersService interface {
 	CreateOrder(context.Context) error
+	ValidadeOrder(context.Context, *pb.CreateOrderRequest) error
 }
 
 type OrdersStore interface {
