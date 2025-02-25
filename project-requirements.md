@@ -1,0 +1,9 @@
+- Go 1.24+.
+- Air for live reloading.
+- gRPC for communication between services.
+- RabbitMQ as message broker.
+- Docker with docker-compose.
+- MongoDB as storage layer.
+- Jaeger for service tracing.
+- HashiCorp's Consul for service discovery. Or Kubernetes
+- Stripe for payments.
