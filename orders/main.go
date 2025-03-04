@@ -9,6 +9,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/eduartepaiva/order-management-system/common"
+	"github.com/eduartepaiva/order-management-system/common/broker"
 	"github.com/eduartepaiva/order-management-system/common/discovery"
 	"github.com/eduartepaiva/order-management-system/common/discovery/consul"
 	"google.golang.org/grpc"
@@ -17,6 +18,10 @@ import (
 var (
 	grpcAddr   = common.EnvString("GRPC_ADDR", "localhost:2000")
 	consulAddr = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	ampqUser   = common.EnvString("RABBITMQ_USER", "guest")
+	ampqPass   = common.EnvString("RABBITMQ_PASS", "guest")
+	ampqHost   = common.EnvString("RABBITMQ_HOST", "localhost")
+	ampqPort   = common.EnvString("RABBITMQ_PORT", "5672")
 )
 
 const (
@@ -41,6 +46,12 @@ func main() {
 			}
 			time.Sleep(time.Second * 1)
 		}
+	}()
+
+	ampqCh, close := broker.Connect(ampqUser, ampqPass, ampqHost, ampqPort)
+	defer func() {
+		close()
+		ampqCh.Close()
 	}()
 
 	grpcServer := grpc.NewServer()
