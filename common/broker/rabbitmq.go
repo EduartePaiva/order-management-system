@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
-	ampq "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func Connect(user, pass, host, port string) (*ampq.Channel, func() error) {
-	conn, err := ampq.Dial(fmt.Sprintf("ampq://%s:%s@%s:%s", user, pass, host, port))
+func Connect(user, pass, host, port string) (*amqp.Channel, func() error) {
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s", user, pass, host, port))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -16,11 +16,11 @@ func Connect(user, pass, host, port string) (*ampq.Channel, func() error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ch.ExchangeDeclare(OrderCreatedEvent, ampq.ExchangeDirect, true, false, false, false, nil)
+	err = ch.ExchangeDeclare(OrderCreatedEvent, amqp.ExchangeDirect, true, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ch.ExchangeDeclare(OrderCreatedPaid, ampq.ExchangeFanout, true, false, false, false, nil)
+	err = ch.ExchangeDeclare(OrderCreatedPaid, amqp.ExchangeFanout, true, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
