@@ -12,6 +12,7 @@ import (
 	"github.com/eduartepaiva/order-management-system/common/broker"
 	"github.com/eduartepaiva/order-management-system/common/discovery"
 	"github.com/eduartepaiva/order-management-system/common/discovery/consul"
+	"github.com/eduartepaiva/order-management-system/payments/processor/stripe"
 	"google.golang.org/grpc"
 )
 
@@ -55,7 +56,8 @@ func main() {
 		amqpCh.Close()
 	}()
 
-	svc := NewService()
+	stripeProcessor := stripe.NewProcessor()
+	svc := NewService(stripeProcessor)
 	amqpConsumer := NewConsumer(svc)
 	go amqpConsumer.Listen(amqpCh)
 	// gRPC server

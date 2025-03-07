@@ -65,11 +65,7 @@ func main() {
 	store := NewStore()
 	svc := NewService(store)
 	NewGRPCHandler(grpcServer, svc, ampqCh)
-
-	svc.CreateOrder(context.Background())
-
 	log.Println("Grpc server started at", grpcAddr)
-
 	if err := grpcServer.Serve(l); err != nil {
 		log.Fatal(err.Error())
 	}

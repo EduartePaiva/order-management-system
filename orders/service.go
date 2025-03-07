@@ -15,21 +15,38 @@ func NewService(store OrdersStore) *service {
 	return &service{store}
 }
 
-func (s *service) CreateOrder(context.Context) error {
-	return nil
+func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*pb.Order, error) {
+	items, err := s.ValidadeOrder(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.Order{
+		Items:      items,
+		CustomerID: p.CustomerID,
+		ID:         "42",
+		Status:     "pending",
+	}, nil
 }
 
-func (s *service) ValidadeOrder(ctx context.Context, p *pb.CreateOrderRequest) error {
+func (s *service) ValidadeOrder(ctx context.Context, p *pb.CreateOrderRequest) ([]*pb.Item, error) {
 	if len(p.Items) == 0 {
-		return common.ErrNoItems
+		return nil, common.ErrNoItems
 	}
-	// TODO: is this really something to be validated? probably not, or if I reassign the p.Items
 	mergedItems := mergeItemsQuantities(p.Items)
-	// This is some extra because it doesn't make sense to merge, mutate values and not update here
-	p.Items = mergedItems
+
+	// TEMPORARY
+	itemsWithPrice := make([]*pb.Item, 0)
+	for _, item := range mergedItems {
+		itemsWithPrice = append(itemsWithPrice, &pb.Item{
+			ID:       item.ID,
+			Quantity: item.Quantity,
+			PriceID:  "stripe_price_id",
+		})
+	}
 
 	// validate with the stock service
-	return nil
+	return itemsWithPrice, nil
 }
 
 func mergeItemsQuantities(items []*pb.ItemsWithQuantity) []*pb.ItemsWithQuantity {
