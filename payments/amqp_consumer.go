@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 
+	pb "github.com/eduartepaiva/order-management-system/common/api"
 	"github.com/eduartepaiva/order-management-system/common/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -27,5 +30,19 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 	}
 	for d := range msgs {
 		log.Printf("Received a message: %s", d.Body)
+		order := &pb.Order{}
+		err := json.Unmarshal(d.Body, order)
+		if err != nil {
+			log.Printf("failed to Unmarshal order: %v", err)
+			continue
+		}
+
+		paymentLink, err := c.service.CreatePayment(context.Background(), order)
+		if err != nil {
+			log.Printf("failed to create checkout link: %v", err)
+			continue
+		}
+
+		log.Printf("payment link: %s", paymentLink)
 	}
 }
