@@ -20,9 +20,18 @@ func (g *gateway) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*p
 	conn, err := discovery.ServiceConnection(ctx, "orders", g.registry)
 	if err != nil {
 		log.Fatalf("Failed to dial server: %v", err)
-
 	}
 	defer conn.Close() // THIS IS WHERE I CHANGED
 	c := pb.NewOrderServiceClient(conn)
 	return c.CreateOrder(ctx, p)
+}
+
+func (g *gateway) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
+	conn, err := discovery.ServiceConnection(ctx, "orders", g.registry)
+	if err != nil {
+		log.Fatalf("Failed to dial server: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewOrderServiceClient(conn)
+	return c.GetOrder(ctx, p)
 }

@@ -21,12 +21,18 @@ func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*p
 		return nil, err
 	}
 
+	id, err := s.store.Create(ctx, p, items)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.Order{
 		Items:      items,
 		CustomerID: p.CustomerID,
-		ID:         "42",
+		ID:         id,
 		Status:     "pending",
 	}, nil
+
 }
 
 func (s *service) ValidadeOrder(ctx context.Context, p *pb.CreateOrderRequest) ([]*pb.Item, error) {
@@ -64,4 +70,8 @@ func mergeItemsQuantities(items []*pb.ItemsWithQuantity) []*pb.ItemsWithQuantity
 	}
 	return newItems
 
+}
+
+func (s *service) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
+	return s.store.Get(ctx, p.OrderID, p.CustomerID)
 }

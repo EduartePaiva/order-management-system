@@ -1,6 +1,8 @@
 package stripe
 
 import (
+	"fmt"
+
 	"github.com/eduartepaiva/order-management-system/common"
 	pb "github.com/eduartepaiva/order-management-system/common/api"
 	sdk "github.com/stripe/stripe-go/v81"
@@ -33,11 +35,14 @@ func (s *stripe) CreatePaymentLink(order *pb.Order) (string, error) {
 			Quantity: sdk.Int64(int64(item.Quantity)),
 		})
 	}
+	gatewaySuccessURL := fmt.Sprintf("%s/success.html?customerID=%s&orderID=%s", gatewayHTTPAddr, order.CustomerID, order.ID)
+	gatewayCancelURL := fmt.Sprintf("%s/cancel.html", gatewayHTTPAddr)
+
 	params := &sdk.CheckoutSessionParams{
 		LineItems:  lineItems,
 		Mode:       sdk.String(string(sdk.CheckoutSessionModePayment)),
-		SuccessURL: sdk.String(gatewayHTTPAddr + "/success"),
-		CancelURL:  sdk.String(gatewayHTTPAddr + "/cancel"),
+		SuccessURL: sdk.String(gatewaySuccessURL),
+		CancelURL:  sdk.String(gatewayCancelURL),
 	}
 	checkoutSession, err := session.New(params)
 	if err != nil {

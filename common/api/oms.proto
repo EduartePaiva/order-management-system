@@ -14,6 +14,7 @@ message Order {
 
 service OrderService {
     rpc CreateOrder(CreateOrderRequest) returns (Order);
+    rpc GetOrder(GetOrderRequest) returns (Order);
 }
 
 message Item {
@@ -33,3 +34,7 @@ message CreateOrderRequest {
     repeated ItemsWithQuantity Items = 2;
 }
 
+message GetOrderRequest {
+    string customerID = 1;
+    string orderID = 2;
+}
