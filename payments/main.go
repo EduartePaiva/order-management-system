@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"net/http"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -17,12 +18,14 @@ import (
 )
 
 var (
-	grpcAddr   = common.EnvString("GRPC_ADDR", "localhost:2001")
-	consulAddr = common.EnvString("CONSUL_ADDR", "localhost:8500")
-	ampqUser   = common.EnvString("RABBITMQ_USER", "guest")
-	ampqPass   = common.EnvString("RABBITMQ_PASS", "guest")
-	ampqHost   = common.EnvString("RABBITMQ_HOST", "localhost")
-	ampqPort   = common.EnvString("RABBITMQ_PORT", "5672")
+	grpcAddr             = common.EnvString("GRPC_ADDR", "localhost:2001")
+	consulAddr           = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	httpAddr             = common.EnvString("HTTP_ADDR", "localhost:8081")
+	ampqUser             = common.EnvString("RABBITMQ_USER", "guest")
+	ampqPass             = common.EnvString("RABBITMQ_PASS", "guest")
+	ampqHost             = common.EnvString("RABBITMQ_HOST", "localhost")
+	ampqPort             = common.EnvString("RABBITMQ_PORT", "5672")
+	endpointStripeSecret = common.EnvString("ENDPOINT_STRIPE_SECRET", "whsec_...")
 )
 
 const (
@@ -54,6 +57,18 @@ func main() {
 	defer func() {
 		close()
 		amqpCh.Close()
+	}()
+
+	//http server
+	mux := http.NewServeMux()
+	httpSv := NewHTTPHandler(amqpCh)
+	httpSv.RegisterRoutes(mux)
+
+	go func() {
+		log.Printf("Webhook HTTP server listening on %v", httpAddr)
+		if err := http.ListenAndServe(httpAddr, mux); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	stripeProcessor := stripe.NewProcessor()
