@@ -16,12 +16,13 @@ import (
 )
 
 var (
-	grpcAddr   = common.EnvString("GRPC_ADDR", "localhost:2000")
-	consulAddr = common.EnvString("CONSUL_ADDR", "localhost:8500")
-	ampqUser   = common.EnvString("RABBITMQ_USER", "guest")
-	ampqPass   = common.EnvString("RABBITMQ_PASS", "guest")
-	ampqHost   = common.EnvString("RABBITMQ_HOST", "localhost")
-	ampqPort   = common.EnvString("RABBITMQ_PORT", "5672")
+	grpcAddr      = common.EnvString("GRPC_ADDR", "localhost:2000")
+	consulAddr    = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	ampqUser      = common.EnvString("RABBITMQ_USER", "guest")
+	ampqPass      = common.EnvString("RABBITMQ_PASS", "guest")
+	ampqHost      = common.EnvString("RABBITMQ_HOST", "localhost")
+	ampqPort      = common.EnvString("RABBITMQ_PORT", "5672")
+	stripePriceID = common.EnvString("STRIPE_PRICE_ID", "some price id")
 )
 
 const (
