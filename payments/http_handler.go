@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	pb "github.com/eduartepaiva/order-management-system/common/api"
 	"github.com/eduartepaiva/order-management-system/common/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stripe/stripe-go/v81"
@@ -60,16 +61,30 @@ func (h *paymentHTTPHandler) handleCheckoutWebhook(w http.ResponseWriter, r *htt
 			return
 		}
 		if cs.PaymentStatus == stripe.CheckoutSessionPaymentStatusPaid {
-			// FulfillCheckout(cs.ID)
 			log.Printf("Payment for checkout session %v succeeded!", cs.ID)
-			// publish a message here
+
+			CustomerID := cs.Metadata["CustomerID"]
+			ID := cs.Metadata["ID"]
+
 			ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
 			defer cancel()
+
+			o := &pb.Order{
+				ID:          ID,
+				CustomerID:  CustomerID,
+				Status:      "paid",
+				PaymentLink: "",
+			}
+
+			marshledOrder, _ := json.Marshal(o)
+
 			h.channel.PublishWithContext(ctx, broker.OrderPaidEvent, "", false, false, amqp.Publishing{
 				ContentType:  "application/json",
-				Body:         "",
+				Body:         marshledOrder,
 				DeliveryMode: amqp.Persistent,
 			})
+
+			log.Println("Message published order.oaid")
 		}
 
 	}

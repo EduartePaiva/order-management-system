@@ -53,3 +53,7 @@ func (h *grpcHandler) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.
 	log.Println("getting the order: ", p)
 	return h.service.GetOrder(ctx, p)
 }
+
+func (h *grpcHandler) UpdateOrder(ctx context.Context, order *pb.Order) (*pb.Order, error) {
+	return h.service.UpdateOrder(ctx, order)
+}

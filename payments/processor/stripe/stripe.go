@@ -43,6 +43,10 @@ func (s *stripe) CreatePaymentLink(order *pb.Order) (string, error) {
 		Mode:       sdk.String(string(sdk.CheckoutSessionModePayment)),
 		SuccessURL: sdk.String(gatewaySuccessURL),
 		CancelURL:  sdk.String(gatewayCancelURL),
+		Metadata: map[string]string{
+			"OrderID":    order.ID,
+			"CustomerID": order.CustomerID,
+		},
 	}
 	checkoutSession, err := session.New(params)
 	if err != nil {

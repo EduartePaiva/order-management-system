@@ -75,3 +75,12 @@ func mergeItemsQuantities(items []*pb.ItemsWithQuantity) []*pb.ItemsWithQuantity
 func (s *service) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
 	return s.store.Get(ctx, p.OrderID, p.CustomerID)
 }
+
+func (s *service) UpdateOrder(ctx context.Context, order *pb.Order) (*pb.Order, error) {
+	err := s.store.Update(ctx, order.ID, order)
+	if err != nil {
+		return nil, err
+	}
+
+	return order, nil
+}
