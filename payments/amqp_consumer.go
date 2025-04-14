@@ -24,7 +24,7 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 		log.Fatal(err)
 	}
 
-	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	msgs, err := ch.Consume(q.Name, "", false, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,6 +33,7 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 		order := &pb.Order{}
 		err := json.Unmarshal(d.Body, order)
 		if err != nil {
+			d.Nack(false, false)
 			log.Printf("failed to Unmarshal order: %v", err)
 			continue
 		}
@@ -44,5 +45,6 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 		}
 
 		log.Printf("payment link: %s", paymentLink)
+		d.Ack(false)
 	}
 }

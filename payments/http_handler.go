@@ -84,7 +84,7 @@ func (h *paymentHTTPHandler) handleCheckoutWebhook(w http.ResponseWriter, r *htt
 				DeliveryMode: amqp.Persistent,
 			})
 
-			log.Println("Message published order.oaid")
+			log.Println("Message published order.paid")
 		}
 
 	}

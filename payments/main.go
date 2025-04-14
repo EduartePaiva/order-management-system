@@ -75,6 +75,7 @@ func main() {
 	stripeProcessor := stripe.NewProcessor()
 	gateway := gateway.NewGRPCGateway(registry)
 	svc := NewService(stripeProcessor, gateway)
+
 	amqpConsumer := NewConsumer(svc)
 	go amqpConsumer.Listen(amqpCh)
 	// gRPC server
