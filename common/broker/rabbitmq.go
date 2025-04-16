@@ -10,6 +10,7 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -31,6 +32,11 @@ func Connect(user, pass, host, port string) (*amqp.Channel, func() error) {
 		log.Fatal(err)
 	}
 	err = ch.ExchangeDeclare(OrderPaidEvent, amqp.ExchangeFanout, true, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	createDLQAndDLX(ch)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +73,19 @@ func HandleRetry(ch *amqp.Channel, d *amqp.Delivery) error {
 	}
 	time.Sleep(CalcExponentialBackoffTime(time.Second, retryCount))
 
-	return nil
+	return ch.PublishWithContext(
+		context.Background(),
+		d.Exchange,
+		d.RoutingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Headers:      d.Headers,
+			Body:         d.Body,
+			DeliveryMode: amqp.Persistent,
+		},
+	)
 }
 
 func CalcExponentialBackoffTime(base time.Duration, retryCount int64) time.Duration {
@@ -79,4 +97,88 @@ func CalcExponentialBackoffTime(base time.Duration, retryCount int64) time.Durat
 	delta := math.Pow(2, float64(retryCount)) * numInBetween
 
 	return base * time.Duration(float64(base)*delta)
+}
+
+func createDLQAndDLX(ch *amqp.Channel) error {
+	q, err := ch.QueueDeclare(
+		"main_queue",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Declare DLX
+	dlx := "dlx_main"
+	err = ch.ExchangeDeclare(
+		dlx,
+		"fanout",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Bind main queue to DLX
+	err = ch.QueueBind(
+		q.Name,
+		"",
+		dlx,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	// Declare DLQ
+	_, err = ch.QueueDeclare(
+		DQL,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	return err
+}
+
+type AmqpHeaderCarrier map[string]interface{}
+
+func (a AmqpHeaderCarrier) Get(k string) string {
+	value, ok := a[k]
+	if !ok {
+		return ""
+	}
+
+	return value.(string)
+}
+
+func (a AmqpHeaderCarrier) Set(k string, v string) {
+	a[k] = v
+}
+
+func (a AmqpHeaderCarrier) Keys() []string {
+	keys := make([]string, len(a))
+	i := 0
+
+	for k := range a {
+		keys[i] = k
+		i++
+	}
+
+	return keys
+}
+
+func ExtractAMQPHeader(ctx context.Context, headers map[string]interface{}) context.Context {
+	return otel.GetTextMapPropagator().Extract(ctx, AmqpHeaderCarrier(headers))
 }
