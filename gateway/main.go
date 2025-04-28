@@ -17,6 +17,7 @@ import (
 var (
 	httpAddr   = common.EnvString("HTTP_ADDR", ":8080")
 	consulAddr = common.EnvString("CONSUL_ADDR", "localhost:8500")
+	jeagerAddr = common.EnvString("JEAGER_ADDR", "localhost:4318")
 )
 
 const (
@@ -24,6 +25,10 @@ const (
 )
 
 func main() {
+	if err := common.SetGlobalTracer(context.TODO(), serviceName, jeagerAddr); err != nil {
+		log.Fatal("failed to set global tracer")
+	}
+
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 

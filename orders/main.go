@@ -23,6 +23,7 @@ var (
 	ampqHost      = common.EnvString("RABBITMQ_HOST", "localhost")
 	ampqPort      = common.EnvString("RABBITMQ_PORT", "5672")
 	stripePriceID = common.EnvString("STRIPE_PRICE_ID", "some price id")
+	jeagerAddr    = common.EnvString("JEAGER_ADDR", "localhost:4318")
 )
 
 const (
@@ -30,6 +31,10 @@ const (
 )
 
 func main() {
+	if err := common.SetGlobalTracer(context.TODO(), serviceName, jeagerAddr); err != nil {
+		log.Fatal("failed to set global tracer")
+	}
+
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	registry, err := consul.NewRegistry(consulAddr, serviceName)

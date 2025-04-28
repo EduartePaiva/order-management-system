@@ -27,6 +27,7 @@ var (
 	ampqHost             = common.EnvString("RABBITMQ_HOST", "localhost")
 	ampqPort             = common.EnvString("RABBITMQ_PORT", "5672")
 	endpointStripeSecret = common.EnvString("ENDPOINT_STRIPE_SECRET", "whsec_...")
+	jeagerAddr           = common.EnvString("JEAGER_ADDR", "localhost:4318")
 )
 
 const (
@@ -34,6 +35,10 @@ const (
 )
 
 func main() {
+	if err := common.SetGlobalTracer(context.TODO(), serviceName, jeagerAddr); err != nil {
+		log.Fatal("failed to set global tracer")
+	}
+
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	// register consul
