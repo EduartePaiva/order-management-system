@@ -179,6 +179,13 @@ func (a AmqpHeaderCarrier) Keys() []string {
 	return keys
 }
 
+func InjectAMQPHeaders(ctx context.Context) map[string]interface{} {
+	carrier := make(AmqpHeaderCarrier)
+	otel.GetTextMapPropagator().Inject(ctx, carrier)
+
+	return carrier
+}
+
 func ExtractAMQPHeader(ctx context.Context, headers map[string]interface{}) context.Context {
 	return otel.GetTextMapPropagator().Extract(ctx, AmqpHeaderCarrier(headers))
 }

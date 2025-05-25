@@ -54,10 +54,10 @@ func main() {
 		}
 	}()
 
-	ampqCh, close := broker.Connect(ampqUser, ampqPass, ampqHost, ampqPort)
+	amqpCh, close := broker.Connect(ampqUser, ampqPass, ampqHost, ampqPort)
 	defer func() {
 		close()
-		ampqCh.Close()
+		amqpCh.Close()
 	}()
 
 	grpcServer := grpc.NewServer()
@@ -70,8 +70,15 @@ func main() {
 
 	store := NewStore()
 	svc := NewService(store)
-	NewGRPCHandler(grpcServer, svc, ampqCh)
+	svcWithTelemetry := NewTelemetryMiddleware(svc)
+
+	NewGRPCHandler(grpcServer, svcWithTelemetry, amqpCh)
+
+	amqpConsumer := NewConsumer(svcWithTelemetry)
+	go amqpConsumer.Listen(amqpCh)
+
 	log.Println("Grpc server started at", grpcAddr)
+
 	if err := grpcServer.Serve(l); err != nil {
 		log.Fatal(err.Error())
 	}

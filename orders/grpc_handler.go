@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	pb "github.com/eduartepaiva/order-management-system/common/api"
 	"github.com/eduartepaiva/order-management-system/common/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 )
 
@@ -24,14 +26,19 @@ func NewGRPCHandler(grpcServer *grpc.Server, service OrdersService, channel *amq
 }
 
 func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*pb.Order, error) {
-	log.Printf("New order received! Order %v", p)
-	order, err := h.service.CreateOrder(ctx, p)
-	if err != nil {
-		return nil, err
-	}
 	q, err := h.channel.QueueDeclare(broker.OrderCreatedEvent, true, false, false, false, nil)
 	if err != nil {
 		log.Println(err)
+		return nil, err
+	}
+
+	tr := otel.Tracer("amqp")
+	amqpCtx, messageSpam := tr.Start(ctx, fmt.Sprintf("AMQP - publish - %s", q.Name))
+	defer messageSpam.End()
+
+	log.Printf("New order received! Order %v", p)
+	order, err := h.service.CreateOrder(amqpCtx, p)
+	if err != nil {
 		return nil, err
 	}
 
@@ -40,10 +47,15 @@ func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest)
 		log.Println("Failed to marshal json", err)
 		return nil, err
 	}
-	h.channel.PublishWithContext(ctx, "", q.Name, false, false, amqp.Publishing{
+
+	// Inject the headers
+	headers := broker.InjectAMQPHeaders(amqpCtx)
+
+	h.channel.PublishWithContext(amqpCtx, "", q.Name, false, false, amqp.Publishing{
 		ContentType:  "application/json",
 		Body:         marshaledOrder,
 		DeliveryMode: amqp.Persistent,
+		Headers:      headers,
 	})
 
 	return order, nil
