@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap"
 
 	"github.com/eduartepaiva/order-management-system/common"
 	"github.com/eduartepaiva/order-management-system/common/broker"
@@ -31,8 +31,11 @@ const (
 )
 
 func main() {
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
 	if err := common.SetGlobalTracer(context.TODO(), serviceName, jeagerAddr); err != nil {
-		log.Fatal("failed to set global tracer")
+		logger.Fatal("failed to set global tracer", zap.Error(err))
 	}
 
 	ctx := context.Background()
@@ -48,7 +51,7 @@ func main() {
 	go func() {
 		for {
 			if err := registry.HealthCheck(instanceID, serviceName); err != nil {
-				log.Fatal("failed to health check")
+				logger.Fatal("failed to health check", zap.Error(err))
 			}
 			time.Sleep(time.Second * 1)
 		}
@@ -64,22 +67,23 @@ func main() {
 
 	l, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatal("Failed to listen on:"+grpcAddr, zap.Error(err))
 	}
 	defer l.Close()
 
 	store := NewStore()
 	svc := NewService(store)
 	svcWithTelemetry := NewTelemetryMiddleware(svc)
+	svcWithLoggin := NewLoggingMiddleware(svcWithTelemetry)
 
-	NewGRPCHandler(grpcServer, svcWithTelemetry, amqpCh)
+	NewGRPCHandler(grpcServer, svcWithLoggin, amqpCh)
 
-	amqpConsumer := NewConsumer(svcWithTelemetry)
+	amqpConsumer := NewConsumer(svcWithLoggin)
 	go amqpConsumer.Listen(amqpCh)
 
-	log.Println("Grpc server started at", grpcAddr)
+	logger.Info("StartingGrpc server started at", zap.String("port", grpcAddr))
 
 	if err := grpcServer.Serve(l); err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 }
